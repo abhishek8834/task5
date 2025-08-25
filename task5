@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ApexPlanet Mini Shop — Final Project</title>
+
+  <!-- Link to external CSS file -->
+  <link rel="stylesheet" href="style5.css">
+
+  <!-- Basic favicons & theme (small perf cost, optional) -->
+  <meta name="theme-color" content="#0ea5a4" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-row">
+      <h1 class="logo">ApexPlanet</h1>
+
+      <nav class="nav">
+        <button id="menuToggle" class="menu-btn" aria-expanded="false">☰</button>
+        <ul id="navList" class="nav-list">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#products">Products</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+
+      <div class="cart-summary" title="View cart">
+        <button id="openCartBtn" aria-label="View cart">🛒 <span id="cartCount">0</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section id="home" class="hero container">
+      <div class="hero-left">
+        <h2>Final Project: Mini E-commerce</h2>
+        <p>Colorful, responsive shop demo integrating HTML, CSS, and JS. Try adding items to the cart, search, and filter.</p>
+        <div class="cta-row">
+          <input id="searchInput" type="search" placeholder="Search products..." aria-label="Search products" />
+          <select id="categoryFilter" aria-label="Filter by category">
+            <option value="">All categories</option>
+            <option value="gadgets">Gadgets</option>
+            <option value="books">Books</option>
+            <option value="home">Home</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <img src="https://picsum.photos/seed/apex/500/330" alt="ApexPlanet" loading="lazy">
+      </div>
+    </section>
+
+    <!-- Products -->
+    <section id="products" class="container products-section">
+      <h3>Products</h3>
+      <div id="productsGrid" class="products-grid" aria-live="polite">
+        <!-- Products are rendered here by JavaScript -->
+      </div>
+    </section>
+
+    <!-- About -->
+    <section id="about" class="container about">
+      <h3>About this Project</h3>
+      <p>This is a compact final-project demo for ApexPlanet Software Pvt Ltd showing performance-focused techniques: small CSS file, lazy images, minimal DOM updates, and cross-browser friendly code.</p>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="container contact">
+      <h3>Contact</h3>
+      <p>For demo purposes only — no real checkout. This shows client-side state using localStorage and accessible controls.</p>
+    </section>
+  </main>
+
+  <!-- Cart modal (simple) -->
+  <aside id="cartModal" class="cart-modal" aria-hidden="true">
+    <div class="cart-panel container">
+      <header class="cart-header">
+        <h4>Your Cart</h4>
+        <button id="closeCartBtn" aria-label="Close cart">✕</button>
+      </header>
+      <div id="cartItems" class="cart-items">
+        <!-- Items rendered here -->
+      </div>
+      <footer class="cart-footer">
+        <div class="cart-totals">
+          <span>Total:</span>
+          <strong id="cartTotal">₹0.00</strong>
+        </div>
+        <div class="cart-actions">
+          <button id="clearCartBtn" class="btn secondary">Clear</button>
+          <button id="fakeCheckoutBtn" class="btn primary">Checkout (demo)</button>
+        </div>
+      </footer>
+    </div>
+  </aside>
+
+  <!-- Minimal inline script placed before closing body for performance -->
+  <script>
+  // ======= Simple product data (could be loaded from JSON in a real app) =======
+  const PRODUCTS = [
+    { id: 'p1', title: 'Smart Speaker', price: 2499, category: 'gadgets', image: 'https://picsum.photos/seed/speaker/400/300' },
+    { id: 'p2', title: 'Portable Charger', price: 899, category: 'gadgets', image: 'https://picsum.photos/seed/charger/400/300' },
+    { id: 'p3', title: 'Minimal Notebook', price: 299, category: 'books', image: 'https://picsum.photos/seed/notebook/400/300' },
+    { id: 'p4', title: 'Ceramic Mug', price: 449, category: 'home', image: 'https://picsum.photos/seed/mug/400/300' },
+    { id: 'p5', title: 'Bluetooth Headphones', price: 3499, category: 'gadgets', image: 'https://picsum.photos/seed/headphones/400/300' },
+    { id: 'p6', title: 'Cookbook', price: 599, category: 'books', image: 'https://picsum.photos/seed/cookbook/400/300' }
+  ];
+
+  // ======= Utilities =======
+  const q = sel => document.querySelector(sel);
+  const qA = sel => Array.from(document.querySelectorAll(sel));
+  const formatPrice = v => '₹' + v.toFixed(2);
+
+  // ======= Cart state persisted to localStorage =======
+  const CART_KEY = 'apex_cart_v1';
+  let cart = JSON.parse(localStorage.getItem(CART_KEY) || '{}'); // { productId: qty }
+
+  function saveCart() {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    renderCartCount();
+  }
+
+  function renderCartCount() {
+    const count = Object.values(cart).reduce((s, n) => s + n, 0);
+    q('#cartCount').textContent = count;
+  }
+
+  // ======= Product rendering (efficient: build fragment) =======
+  function renderProducts(list) {
+    const grid = q('#productsGrid');
+    grid.innerHTML = '';
+    const frag = document.createDocumentFragment();
+
+    list.forEach(p => {
+      const card = document.createElement('article');
+      card.className = 'product-card';
+      card.innerHTML = `
+        <img src="${p.image}" alt="${p.title}" loading="lazy" width="400" height="300">
+        <div class="product-body">
+          <h4>${p.title}</h4>
+          <div class="product-meta">
+            <span class="price">${formatPrice(p.price)}</span>
+            <span class="category">${p.category}</span>
+          </div>
+          <div class="product-actions">
+            <button class="btn add-cart" data-id="${p.id}">Add to cart</button>
+          </div>
+        </div>
+      `;
+      frag.appendChild(card);
+    });
+
+    grid.appendChild(frag);
+  }
+
+  // ======= Filter & Search =======
+  function applyFilters() {
+    const qInput = q('#searchInput').value.trim().toLowerCase();
+    const category = q('#categoryFilter').value;
+    const filtered = PRODUCTS.filter(p => {
+      const matchesSearch = p.title.toLowerCase().includes(qInput) || p.category.toLowerCase().includes(qInput);
+      const matchesCategory = category ? p.category === category : true;
+      return matchesSearch && matchesCategory;
+    });
+    renderProducts(filtered);
+  }
+
+  // ======= Cart UI =======
+  function openCart() {
+    q('#cartModal').setAttribute('aria-hidden', 'false');
+    q('#cartModal').classList.add('open');
+    renderCartItems();
+  }
+
+  function closeCart() {
+    q('#cartModal').setAttribute('aria-hidden', 'true');
+    q('#cartModal').classList.remove('open');
+  }
+
+  function renderCartItems() {
+    const container = q('#cartItems');
+    container.innerHTML = '';
+    const keys = Object.keys(cart);
+    if (keys.length === 0) {
+      container.innerHTML = '<p>Your cart is empty.</p>';
+      q('#cartTotal').textContent = formatPrice(0);
+      return;
+    }
+
+    let total = 0;
+    const ul = document.createElement('div');
+    ul.className = 'cart-list';
+
+    keys.forEach(id => {
+      const p = PRODUCTS.find(x => x.id === id);
+      const qty = cart[id];
+      const subtotal = p.price * qty;
+      total += subtotal;
+
+      const row = document.createElement('div');
+      row.className = 'cart-row';
+      row.innerHTML = `
+        <div class="cart-row-left">
+          <img src="${p.image}" alt="${p.title}" loading="lazy" width="80" height="60">
+        </div>
+        <div class="cart-row-mid">
+          <strong>${p.title}</strong>
+          <div class="muted">${formatPrice(p.price)} × ${qty} = ${formatPrice(subtotal)}</div>
+        </div>
+        <div class="cart-row-right">
+          <button class="tiny" data-op="dec" data-id="${id}">−</button>
+          <button class="tiny" data-op="inc" data-id="${id}">+</button>
+          <button class="tiny" data-op="remove" data-id="${id}">✕</button>
+        </div>
+      `;
+      ul.appendChild(row);
+    });
+
+    container.appendChild(ul);
+    q('#cartTotal').textContent = formatPrice(total);
+  }
+
+  // ======= Event delegation for cart row buttons =======
+  document.addEventListener('click', (ev) => {
+    const t = ev.target;
+
+    // Add to cart buttons
+    if (t.matches('.add-cart')) {
+      const id = t.dataset.id;
+      cart[id] = (cart[id] || 0) + 1;
+      saveCart();
+      renderCartCount();
+      // small UI feedback
+      t.textContent = 'Added ✓';
+      setTimeout(() => t.textContent = 'Add to cart', 750);
+      return;
+    }
+
+    // Open cart
+    if (t.id === 'openCartBtn') { openCart(); return; }
+    if (t.id === 'closeCartBtn') { closeCart(); return; }
+
+    // Cart operations (delegated from cartRows)
+    if (t.dataset && t.dataset.op) {
+      const id = t.dataset.id;
+      const op = t.dataset.op;
+      if (!cart[id]) return;
+      if (op === 'inc') cart[id] = cart[id] + 1;
+      if (op === 'dec') {
+        cart[id] = cart[id] - 1;
+        if (cart[id] <= 0) delete cart[id];
+      }
+      if (op === 'remove') delete cart[id];
+      saveCart();
+      renderCartItems();
+      return;
+    }
+
+    // Clear cart
+    if (t.id === 'clearCartBtn') {
+      cart = {};
+      saveCart();
+      renderCartItems();
+      return;
+    }
+
+    // Fake checkout
+    if (t.id === 'fakeCheckoutBtn') {
+      alert('Checkout is a demo. Thank you for trying the ApexPlanet demo!');
+      cart = {};
+      saveCart();
+      renderCartItems();
+      closeCart();
+    }
+
+    // Menu toggle for small screens
+    if (t.id === 'menuToggle') {
+      const navList = q('#navList');
+      const expanded = t.getAttribute('aria-expanded') === 'true';
+      t.setAttribute('aria-expanded', (!expanded).toString());
+      navList.classList.toggle('open');
+    }
+  });
+
+  // ======= Inputs events =======
+  q('#searchInput').addEventListener('input', () => applyFilters());
+  q('#categoryFilter').addEventListener('change', () => applyFilters());
+
+  // Close cart on overlay click (optional)
+  q('#cartModal').addEventListener('click', (ev) => {
+    if (ev.target === q('#cartModal')) closeCart();
+  });
+
+  // Init render
+  renderProducts(PRODUCTS);
+  renderCartCount();
+
+  // Accessibility: close cart with Escape
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && q('#cartModal').classList.contains('open')) {
+      closeCart();
+    }
+  });
+
+  // Performance tip (defer heavy tasks) - simulated here with requestIdleCallback where available
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      // future non-critical work would go here (analytics, prefetch)
+      // placeholder to show pattern
+      console.log('idle callback available — performing non-critical work');
+    });
+  }
+
+  </script>
+</body>
+</html>
+
+
